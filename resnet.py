@@ -41,6 +41,7 @@ class ResNet(nn.Module):
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU()
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1) 
+        self.sigmoid = nn.Sigmoid()
 
         # ResNet layers
         self.layer1 = self._make_layer(block, layers[0], out_channels=64, stride=1) # 112x112 -> 56x56
@@ -65,6 +66,7 @@ class ResNet(nn.Module):
         x = self.avgpool(x)
         x = x.reshape(x.shape[0], -1) # flatten
         x = self.fc(x)
+        x = self.sigmoid(x)
 
         return x
         
