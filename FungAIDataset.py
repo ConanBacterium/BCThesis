@@ -2,8 +2,8 @@ import os
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
-from pathlib import Path
-from skimage import io 
+from pathlib import Path 
+from PIL import Image
 import mysql.connector
 from get_annotation_pandas_df import get_annotation_pandas_df
 
@@ -20,7 +20,7 @@ class FungAIDataset(Dataset):
     
     def __getitem__(self, index):
         img_path= Path(self.annotations["FrameIDPath"].iloc[19])
-        image = io.imread(img_path)
+        image = Image.open(img_path)
         
         hyferanno = int(self.annotations["Hyfer"].iloc[index])
         y_label = torch.tensor(0 if hyferanno == 0 else 1)
