@@ -7,6 +7,8 @@ import torchvision.datasets as datasets # has standard datasets we can import in
 import torchvision.transforms as transforms # transform images, videos, etc.
 from resnet import ResNet50
 from FungAIDataset import FungAIDataset
+from preprocessing import fungai_preprocessing
+from sklearn.metrics import confusion_matrix
 
 # set device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -14,12 +16,12 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # hyperparamters
 num_classes=1
 learning_rate = 0.001
-batch_size = 5
-num_epochs = 1
+batch_size = 20 # tested batch_size of 64, not enough memory for that... 
+num_epochs = 10
 threshold = 0.5
 
 # load data
-dataset = FungAIDataset(transform = transforms.ToTensor(), limit = 3000)
+dataset = FungAIDataset(transform = fungai_preprocessing)
 
 testsize = 600
 train_set, test_set = torch.utils.data.random_split(dataset, [len(dataset)-testsize, testsize])
@@ -55,14 +57,13 @@ for epoch in range(num_epochs):
 
 # check accuracy on training & test
 
-print("!!!!!")
-print(scores)
-print(scores.shape)
-
 def check_accuracy(loader, model):
     num_correct = 0
     num_samples = 0
     model.eval() # set model to evaluation mode
+    
+    y_true = []
+    y_pred = []
 
     with torch.no_grad(): # don't need to calculate gradients
         for x, y in loader:
@@ -73,10 +74,23 @@ def check_accuracy(loader, model):
 
             scores = model(x)
             predictions = torch.round(scores - threshold + 0.5)
+            
+            y_true.extend(y)
+            y_pred.extend(predictions)
+            
             num_correct += (predictions == y).sum() # sum because the dataloader might be in batches.
             num_samples += predictions.size(0)
 
         print(f'Got {num_correct} / {num_samples} with accuracy {float(num_correct)/float(num_samples)*100:.2f}')
+        
+        cm = confusion_matrix(y, y_pred)
+        print(cm)
     model.train() # set model back to training mode
+    
+# Define the file path to save the weights
+PATH = 'resnet_weights/resnet50.pth'
+
+# Save the weights
+torch.save(model.state_dict(), PATH)
 
 check_accuracy(test_loader, model)
