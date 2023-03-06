@@ -19,18 +19,18 @@ num_epochs = 1
 threshold = 0.5
 
 # load data
-dataset = FungAIDataset(transform = transforms.ToTensor(), limit = 3000) 
+dataset = FungAIDataset(transform = transforms.ToTensor(), limit = 3000)
 
 testsize = 600
 train_set, test_set = torch.utils.data.random_split(dataset, [len(dataset)-testsize, testsize])
 train_loader = DataLoader(dataset=train_set, batch_size=batch_size, shuffle=True)
-train_loader = DataLoader(dataset=test_set, batch_size=batch_size, shuffle=True)
+test_loader = DataLoader(dataset=test_set, batch_size=batch_size, shuffle=True)
 
 # initialize network
 model = ResNet50(num_classes=num_classes).to(device)
 
 # loss and optimizer
-criterion = nn.CrossEntropyLoss()
+criterion = nn.BCELoss()
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 # train network
@@ -39,6 +39,8 @@ for epoch in range(num_epochs):
     for batch_idx, (data, targets) in enumerate(train_loader): #data is image, target is true y (true class)
         data = data.to(device=device)
         targets = targets.to(device=device)
+        targets = targets.float()
+        targets = targets.view(-1, 1) # Reshape target tensors to match output tensor size... TODO CHECK IF THIS IS BUENO
 
         # forward
         scores = model(data)
@@ -58,10 +60,6 @@ print(scores)
 print(scores.shape)
 
 def check_accuracy(loader, model):
-    if loader.dataset.train:
-        print('Checking accuracy on training data')
-    else:
-        print('Checking accuracy on test data')
     num_correct = 0
     num_samples = 0
     model.eval() # set model to evaluation mode
@@ -70,13 +68,15 @@ def check_accuracy(loader, model):
         for x, y in loader:
             x = x.to(device=device)
             y = y.to(device=device)
+            y = y.float()
+            y = targets.view(-1,1)
 
             scores = model(x)
             predictions = torch.round(scores - threshold + 0.5)
             num_correct += (predictions == y).sum() # sum because the dataloader might be in batches.
             num_samples += predictions.size(0)
 
-        print(f'{num_correct} / {num_samples} with accuracy {float(num_correct)/float(num_samples)*100:.2f}')
+        print(f'Got {num_correct} / {num_samples} with accuracy {float(num_correct)/float(num_samples)*100:.2f}')
     model.train() # set model back to training mode
 
 check_accuracy(test_loader, model)
