@@ -35,35 +35,6 @@ class Block(nn.Module):
         
         return x
     
-class BlockSmall(nn.Module):
-    def __init__(self, in_channels, out_channels, identity_downsample=None, stride=1):
-        super(BlockSmall, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0) # same convolution??
-        self.bn1 = nn.BatchNorm2d(out_channels)
-        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=stride, padding=1) # 
-        self.bn2 = nn.BatchNorm2d(out_channels)
-        self.relu = nn.ReLU()
-        self.identity_downsample = identity_downsample # if we have a skip connection, we need to resize it to the new dimension. there is a skip connection if the in_channels or dimension has changed. (after each block or what??)
-
-    def forward(self, x):
-        identity = x # save the input for the skip connection... 
-        print(f"identity.size {identity.size()}")
-
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.conv2(x)
-        x = self.bn2(x)
-        if self.identity_downsample is not None:
-            print("identity_downsample not none")
-            identity = self.identity_downsample(identity)
-            print(f"identity.size {identity.size()}")
-        print(f"x.size {x.size()}")
-        x += identity # add the skip connection
-        x = self.relu(x)
-        
-        return x
-    
 class ResNet(nn.Module):
     def __init__(self, block, layers, image_channels, num_classes):
         # layers is a list of the number of blocks in each layer, so ResNet50 is [3,4,6,3]
@@ -129,14 +100,3 @@ def ResNet101(img_channels=3, num_classes=1000):
 
 def ResNet152(img_channels=3, num_classes=1000):
     return ResNet(Block, [3,4,36,3], img_channels, num_classes)
-
-def ResNet18(img_channels=3, num_classes=1000):
-    return ResNet(BlockSmall, [2,2,2,2], img_channels, num_classes)
-
-""" def test():
-    x = torch.randn(2, 3, 600, 600)
-    model = ResNet50()
-    y = model(x).to('cpu')
-    print(y.shape)
-
-test() """
