@@ -9,88 +9,84 @@ from resnet import ResNet50
 from FungAIDataset import FungAIDataset
 from preprocessing import fungai_preprocessing
 from sklearn.metrics import confusion_matrix
+import mlflow
+from mlflow import pyfunc 
+import mlflow.pytorch
+import numpy as np
+import datetime
+from custom_metric_funcs import get_accuracy_and_confusion_matrix
 
-# set device
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+mlflow.set_experiment("test_experiment")
 
-# hyperparamters
-num_classes=1
-learning_rate = 0.001
-batch_size = 20 # tested batch_size of 64, not enough memory for that... 
-num_epochs = 10
-threshold = 0.5
-
-# load data
-dataset = FungAIDataset(transform = fungai_preprocessing)
-
-testsize = 600
-train_set, test_set = torch.utils.data.random_split(dataset, [len(dataset)-testsize, testsize])
-train_loader = DataLoader(dataset=train_set, batch_size=batch_size, shuffle=True)
-test_loader = DataLoader(dataset=test_set, batch_size=batch_size, shuffle=True)
-
-# initialize network
-model = ResNet50(num_classes=num_classes).to(device)
-
-# loss and optimizer
-criterion = nn.BCELoss()
-optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-
-# train network
-model.train() # set model to training mode 
-for epoch in range(num_epochs):
-    for batch_idx, (data, targets) in enumerate(train_loader): #data is image, target is true y (true class)
-        data = data.to(device=device)
-        targets = targets.to(device=device)
-        targets = targets.float()
-        targets = targets.view(-1, 1) # Reshape target tensors to match output tensor size... TODO CHECK IF THIS IS BUENO
-
-        # forward
-        scores = model(data)
-        loss = criterion(scores, targets)
-
-        # backward
-        optimizer.zero_grad() # set all gradients to 0 before starting to do backpropragation for eatch batch because gradients are accumulated
-        loss.backward()
-
-        # gradient descent or adam step
-        optimizer.step() # update the weights
-
-# check accuracy on training & test
-
-def check_accuracy(loader, model):
-    num_correct = 0
-    num_samples = 0
-    model.eval() # set model to evaluation mode
+with mlflow.start_run():
+    ########### TODO !!!!!!!!! ADD CODE AS ARTIFACT !!!!!!!! AND MAYBE CODE OF HOMEMADE MODULES THAT ARE IMPORTED? 
     
-    y_true = []
-    y_pred = []
+    # set device
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    with torch.no_grad(): # don't need to calculate gradients
-        for x, y in loader:
-            x = x.to(device=device)
-            y = y.to(device=device)
-            y = y.float()
-            y = targets.view(-1,1)
+    # hyperparamters
+    num_classes=1
+    learning_rate = 0.001
+    batch_size = 20 # tested batch_size of 64, not enough memory for that... 
+    num_epochs = 10
+    threshold = 0.5
 
-            scores = model(x)
-            predictions = torch.round(scores - threshold + 0.5)
+    mlflow.log_param("num_classes", num_classes)
+    mlflow.log_param("learning_rate", learning_rate)
+    mlflow.log_param("batch_size", batch_size)
+    mlflow.log_param("num_epochs", num_epochs)
+    mlflow.log_param("threshold", threshold)
+
+    # load data
+    dataset_limit = 200
+    mlflow.set_tag("dataset_limit", dataset_limit)
+    dataset = FungAIDataset(transform = fungai_preprocessing, limit=dataset_limit)
+
+    mlflow.set_tag("preprocessing", "fungai_preprocessing")
+
+    testsize = 100
+    mlflow.set_tag("testsize", "testsize")
+    train_set, test_set = torch.utils.data.random_split(dataset, [len(dataset)-testsize, testsize])
+    train_loader = DataLoader(dataset=train_set, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(dataset=test_set, batch_size=batch_size, shuffle=True)
+
+    # initialize network
+    model = ResNet50(num_classes=num_classes).to(device)
+
+    # loss and optimizer
+    criterion = nn.BCELoss()
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+
+    # train network
+    model.train() # set model to training mode 
+    for epoch in range(num_epochs):
+        for batch_idx, (data, targets) in enumerate(train_loader): #data is image, target is true y (true class)
+            data = data.to(device=device)
+            targets = targets.to(device=device)
+            targets = targets.float()
+            targets = targets.view(-1, 1) # Reshape target tensors to match output tensor size... TODO CHECK IF THIS IS BUENO
+
+            # forward
+            scores = model(data)
+            loss = criterion(scores, targets)
+
+            # backward
+            optimizer.zero_grad() # set all gradients to 0 before starting to do backpropragation for eatch batch because gradients are accumulated
+            loss.backward()
+
+            # gradient descent or adam step
+            optimizer.step() # update the weights
             
-            y_true.extend(y)
-            y_pred.extend(predictions)
-            
-            num_correct += (predictions == y).sum() # sum because the dataloader might be in batches.
-            num_samples += predictions.size(0)
+        accuracy, cm = get_accuracy_and_confusion_matrix(test_loader, model, device, threshold)
+        mlflow.log_metric("accuracy", accuracy, step=epoch)
+        mlflow.log_metric("tp", cm[0][0], step=epoch)
+        mlflow.log_metric("fp", cm[0][1], step=epoch)
+        mlflow.log_metric("tn", cm[1][0], step=epoch)
+        mlflow.log_metric("fn", cm[1][1], step=epoch)
 
-        print(f'Got {num_correct} / {num_samples} with accuracy {float(num_correct)/float(num_samples)*100:.2f}')
-        
-        cm = confusion_matrix(y, y_pred)
-        print(cm)
-    model.train() # set model back to training mode
-    
-# Define the file path to save the weights
-PATH = 'resnet_weights/resnet50.pth'
+    # Define the file path to save the weights
+    PATH = 'resnet_weights/resnet50_10epochs.pth'
+    # Save the weights
+    torch.save(model.state_dict(), PATH)
 
-# Save the weights
-torch.save(model.state_dict(), PATH)
-
-check_accuracy(test_loader, model)
+    mlflow.pytorch.log_model(model, "models")
