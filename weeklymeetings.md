@@ -1,4 +1,4 @@
-* [7th March 2023 (not meeting)](#march-7th)
+* [7th March 2023 (progress as of 7th March, pre weekly-meetings)](#march-7th)
 
 * [Test](#test)
 
@@ -107,5 +107,7 @@ Wei et. al. 2019 uses 224x224 size ResNet that is pretrained, but my constraint 
 
 Ibid. recommends a smaller ResNet18 model when there isn't much training data, but I don't see how that is necessary since the skip connections should mean the model won't degrade as the size increases... 
 <hr>
+
+
 ### Test
 
