@@ -16,10 +16,12 @@ import numpy as np
 import datetime
 from custom_metric_funcs import get_accuracy_and_confusion_matrix
 
-mlflow.set_experiment("test_experiment")
+mlflow.set_experiment("balanced_resnet50_5epochs")
 
 with mlflow.start_run():
     ########### TODO !!!!!!!!! ADD CODE AS ARTIFACT !!!!!!!! AND MAYBE CODE OF HOMEMADE MODULES THAT ARE IMPORTED? 
+    ############ AND THE MODEL !!! VERY IMPORTANT! we only save the weights of the model, and thus if the model changes they will become
+    ############ useless... 
     
     # set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -28,25 +30,29 @@ with mlflow.start_run():
     num_classes=1
     learning_rate = 0.001
     batch_size = 20 # tested batch_size of 64, not enough memory for that... 
-    num_epochs = 10
+    num_epochs = 5
     threshold = 0.5
+    balanced = True 
 
     mlflow.log_param("num_classes", num_classes)
     mlflow.log_param("learning_rate", learning_rate)
     mlflow.log_param("batch_size", batch_size)
     mlflow.log_param("num_epochs", num_epochs)
     mlflow.log_param("threshold", threshold)
+    mlflow.log_param("balanced", balanced)
 
     # load data
-    dataset_limit = 200
+    dataset_limit = 0
     mlflow.set_tag("dataset_limit", dataset_limit)
-    dataset = FungAIDataset(transform = fungai_preprocessing, limit=dataset_limit)
+    dataset = FungAIDataset(transform = fungai_preprocessing, limit=dataset_limit, balanced=balanced)
 
     mlflow.set_tag("preprocessing", "fungai_preprocessing")
 
-    testsize = 100
-    mlflow.set_tag("testsize", "testsize")
-    train_set, test_set = torch.utils.data.random_split(dataset, [len(dataset)-testsize, testsize])
+    testsize = 300
+    trainsize = len(dataset)-testsize
+    mlflow.set_tag("trainsize", trainsize)
+    mlflow.set_tag("testsize", testsize)
+    train_set, test_set = torch.utils.data.random_split(dataset, [trainsize, testsize])
     train_loader = DataLoader(dataset=train_set, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(dataset=test_set, batch_size=batch_size, shuffle=True)
 
@@ -81,12 +87,12 @@ with mlflow.start_run():
         mlflow.log_metric("accuracy", accuracy, step=epoch)
         mlflow.log_metric("tp", cm[0][0], step=epoch)
         mlflow.log_metric("fp", cm[0][1], step=epoch)
-        mlflow.log_metric("tn", cm[1][0], step=epoch)
-        mlflow.log_metric("fn", cm[1][1], step=epoch)
+        mlflow.log_metric("tn", cm[1][1], step=epoch)
+        mlflow.log_metric("fn", cm[1][0], step=epoch)
 
     # Define the file path to save the weights
-    PATH = 'resnet_weights/resnet50_10epochs.pth'
+    state_dict_path = 'resnet_weights/resnet50_10epochs.pth'
     # Save the weights
-    torch.save(model.state_dict(), PATH)
+    torch.save(model.state_dict(), state_dict_path)
 
     mlflow.pytorch.log_model(model, "models")
