@@ -16,6 +16,10 @@ Questions:
 
 2) If the overall approach (sliding window) is the same as the one in the project I'm replicating is it then okay to use a model that is different from theirs? Given that the EfficientNet seems to be better - which is to be expected, it's from 2019/2021 and ResNet is from 2015... 
 
+3) How to best insert metadata? 
+
+4) It's a no-go when data augmentation produces positive training examples that an annotator would classify as negative, right?
+
 Bonus question: is it somehow possible to pretrain specific filters on the 28x28 MEDMNIST dataset? Some of the images look kinda similar to our data. It would have to be the first convolutions I imagine. 
 
 
