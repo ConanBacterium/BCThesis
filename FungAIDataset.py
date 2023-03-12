@@ -8,16 +8,15 @@ from PIL import Image
 from get_annotation_pandas_df import get_annotation_pandas_df
 
 class FungAIDataset(Dataset):
-    def __init__(self, transform=None, limit=0, balanced=False):
+    def __init__(self, annotations_pd_df=None, transform=None, limit=0, balanced=False):
         self.transform = transform
-        self.annotations = get_annotation_pandas_df()
-        self.annotations = self.annotations.dropna()
-        self.annotations = self.annotations.reset_index(drop=True)
+        if annotations_pd_df is None: 
+            self.annotations = get_annotation_pandas_df()
+            self.annotations = self.annotations.dropna()
+            self.annotations = self.annotations.reset_index(drop=True)
+        else: self.annotations = annotations_pd_df
         
-        if balanced: 
-            self._balance_annotations(666)
-            sanity_check = self.annotations['Hyfer'][self.annotations['Hyfer'] > 0].count() == self.annotations['Hyfer'][self.annotations['Hyfer'] == 0].count()
-            print(f"balanced: {sanity_check}")
+        if balanced: self._balance_annotations(666)
         if limit: self.annotations = self.annotations.iloc[0:limit]
             
     def _balance_annotations(self, randomSeed):
@@ -43,3 +42,33 @@ class FungAIDataset(Dataset):
             image = self.transform(image)
         
         return (image, y_label)
+    
+# if given valsize = 0 it will only return train and test Pytorch datasets. 
+def getFungAIDatasetSplits(trainsize, valsize, testsize, transform=None, limit=0, balanced=False):
+    annotations = get_annotation_pandas_df()
+    annotations = annotations.dropna()
+    annotations = annotations.reset_index(drop=True)
+    
+    if balanced: 
+        num_nonzeros = annotations['Hyfer'][annotations['Hyfer'] > 0].count()
+        num_zeros = annotations['Hyfer'][annotations['Hyfer'] == 0].count()
+        while num_nonzeros != num_zeros:
+            num_to_remove = num_zeros - num_nonzeros
+            remove_indices = annotations[annotations['Hyfer'] == 0].sample(n=num_to_remove, random_state=randomSeed).index
+            annotations = annotations.drop(remove_indices)
+            num_nonzeros = annotations['Hyfer'][annotations['Hyfer'] > 0].count()
+            num_zeros = annotations['Hyfer'][annotations['Hyfer'] == 0].count()
+            
+    if limit: annotations = annotations.iloc[0:limit]
+        
+    trainset = annotations.iloc[0:trainsize].reset_index(drop=True)
+    if valsize: 
+        valset = annotations.iloc[trainsize:trainsize+valsize].reset_index(drop=True)
+        testset = annotations.iloc[trainsize+valsize:trainsize+valsize+testsize].reset_index(drop=True)
+        
+        return FungAIDataset(trainset, transform), FungAIDataset(valset, transform), FungAIDataset(testset, transform)
+    else: 
+        testset = annotations.iloc[trainsize:trainsize+testsize].reset_index(drop=True)
+        return FungAIDataset(trainset, transform), FungAIDataset(testset, transform)
+        
+    
