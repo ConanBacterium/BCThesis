@@ -18,7 +18,7 @@ Questions:
 
 3) How to best insert metadata? 
 
-4) It's a no-go when data augmentation produces positive training examples that an annotator would classify as negative, right?
+4) It's a no-go when data augmentation produces positive training examples that an annotator would classify as negative, right? And when using a pretrained model where it's recommended that you normalize with a certain mean and std, what do you do if that normalization renders many of the training examples unrecognizable?
 
 Bonus question: is it somehow possible to pretrain specific filters on the 28x28 MEDMNIST dataset? Some of the images look kinda similar to our data. It would have to be the first convolutions I imagine. 
 
