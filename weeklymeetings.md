@@ -1,6 +1,6 @@
-* [7th March 2023 (progress as of 7th March, pre weekly-meetings)](#march-7th)
+* [12th of March 2023 (pre weekly-meetings](#march-12th)
 
-* [Test](#test)
+* [7th March 2023 (progress as of 7th March, pre weekly-meetings)](#march-7th)
 
 ### March 7th
 As of march 7th there still hasn't been a meeting, as I have cancelled the meetings we've been supposed to have. 
@@ -18,6 +18,7 @@ Wei et. al. 2019 uses 224x224 size ResNet that is pretrained, but my constraint 
 Ibid. recommends a smaller ResNet18 model when there isn't much training data, but I don't see how that is necessary since the skip connections should mean the model won't degrade as the size increases... 
 <hr>
 
+### March 12th
 
-### Test
+Set up MLFlow and is currently training on balanced dataset (~1500 of each class). Had to fix VPN issues. Trying out segmentation annotations for full images with Paint.NET, hopefully it will speed up the annotation process. 
 
