@@ -15,6 +15,7 @@ Questions:
 1) use ITU cluster to pretrain ResNet50 on ImageNet? Or wait for new annotations where 224x224 can be used and finetune the pretrained ResNet50 on that?
 
 2) If the overall approach (sliding window) is the same as the one in the project I'm replicating is it then okay to use a model that is different from theirs? Given that the EfficientNet seems to be better - which is to be expected, it's from 2019/2021 and ResNet is from 2015... 
+2.5) Actually, our data looks so alike that maybe it's fine to not normalize at all?  
 
 3) How to best insert metadata? 
 
