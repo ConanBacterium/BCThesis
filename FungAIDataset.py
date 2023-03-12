@@ -33,7 +33,7 @@ class FungAIDataset(Dataset):
     def __len__(self): return len(self.annotations)
     
     def __getitem__(self, index):
-        img_path= Path(self.annotations["FrameIDPath"].iloc[19])
+        img_path= Path(self.annotations["FrameIDPath"].iloc[index])
         image = Image.open(img_path)
         
         hyferanno = int(self.annotations["Hyfer"].iloc[index])
