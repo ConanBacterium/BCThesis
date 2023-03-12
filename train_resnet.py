@@ -1,3 +1,6 @@
+import sys
+sys.path.append('../') # add parent dir to path, otherwise can't load ResNet, custom_metric_funcs etc
+
 import torch
 import torch.nn as nn # all neural network modules, nn.Linear, nn.Conv2d, BatchNorm, Loss functions
 import torch.optim as optim # all optimization algorithms, SGD, Adam, etc.
@@ -5,9 +8,10 @@ import torch.nn.functional as F # all functions that don't have any parameters, 
 from torch.utils.data import DataLoader # gives easier dataset managment and creates mini batches
 import torchvision.datasets as datasets # has standard datasets we can import in a nice way
 import torchvision.transforms as transforms # transform images, videos, etc.
+import torchvision.models as models
 from resnet import ResNet50
-from FungAIDataset import FungAIDataset
-from preprocessing import fungai_preprocessing
+from FungAIDataset import getFungAIDatasetSplits
+from preprocessing import resize_224_with_aug_no_norm, resize_224_no_aug_no_norm
 from sklearn.metrics import confusion_matrix
 import mlflow
 from mlflow import pyfunc 
@@ -16,7 +20,10 @@ import numpy as np
 import datetime
 from custom_metric_funcs import get_accuracy_and_confusion_matrix
 
-mlflow.set_experiment("balanced_resnet50_5epochs")
+#setting torch hub directory manually
+torch.hub.set_dir("/home/anaconda/.cache/torch/hub/")
+
+mlflow.set_experiment("finetuning_pretrained_resnet50_downsizing_to_224x224")
 
 with mlflow.start_run():
     ########### TODO !!!!!!!!! ADD CODE AS ARTIFACT !!!!!!!! AND MAYBE CODE OF HOMEMADE MODULES THAT ARE IMPORTED? 
@@ -30,7 +37,7 @@ with mlflow.start_run():
     num_classes=1
     learning_rate = 0.001
     batch_size = 20 # tested batch_size of 64, not enough memory for that... 
-    num_epochs = 5
+    num_epochs = 20
     threshold = 0.5
     balanced = True 
 
@@ -43,16 +50,20 @@ with mlflow.start_run():
 
     # load data
     dataset_limit = 0
-    mlflow.set_tag("dataset_limit", dataset_limit)
-    dataset = FungAIDataset(transform = fungai_preprocessing, limit=dataset_limit, balanced=balanced)
-
-    mlflow.set_tag("preprocessing", "fungai_preprocessing")
-
     testsize = 300
-    trainsize = len(dataset)-testsize
-    mlflow.set_tag("trainsize", trainsize)
-    mlflow.set_tag("testsize", testsize)
-    train_set, test_set = torch.utils.data.random_split(dataset, [trainsize, testsize])
+    trainsize = None 
+    valsize = 0
+    mlflow.log_param("dataset_limit", dataset_limit)
+#     mlflow.log_param("valsize", valsize)
+    
+    mlflow.set_tag("train_preprocessing", "resize_224_with_aug_no_norm")
+    mlflow.set_tag("val_preprocessing", "resize_224_no_aug_no_norm")
+
+    train_set, test_set = getFungAIDatasetSplits(valsize, testsize, trainsize=trainsize, train_transform=resize_224_with_aug_no_norm, 
+                                                 val_test_transform=resize_224_no_aug_no_norm, limit=dataset_limit, balanced=balanced)
+    print(f"testsize {len(test_set)} : trainsize {len(train_set)}")
+    mlflow.log_param("testsize", len(test_set))
+    mlflow.log_param("trainsize", len(train_set))
     train_loader = DataLoader(dataset=train_set, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(dataset=test_set, batch_size=batch_size, shuffle=True)
 
@@ -84,6 +95,10 @@ with mlflow.start_run():
             optimizer.step() # update the weights
             
         accuracy, cm = get_accuracy_and_confusion_matrix(test_loader, model, device, threshold)
+        print(f"epoch {epoch} CM")
+        print(cm)
+        print(f"accuracy {accuracy}")
+        print("---")
         mlflow.log_metric("accuracy", accuracy, step=epoch)
         mlflow.log_metric("tp", cm[0][0], step=epoch)
         mlflow.log_metric("fp", cm[0][1], step=epoch)
@@ -91,7 +106,7 @@ with mlflow.start_run():
         mlflow.log_metric("fn", cm[1][0], step=epoch)
 
     # Define the file path to save the weights
-    state_dict_path = 'resnet_weights/resnet50_10epochs.pth'
+    state_dict_path = '../resnet_weights/finetuned_pretrained_resnet50_downsizing_to_224x224.pth'
     # Save the weights
     torch.save(model.state_dict(), state_dict_path)
 
