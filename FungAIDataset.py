@@ -44,7 +44,8 @@ class FungAIDataset(Dataset):
         return (image, y_label)
     
 # if given valsize = 0 it will only return train and test Pytorch datasets. 
-def getFungAIDatasetSplits(trainsize, valsize, testsize, transform=None, limit=0, balanced=False):
+def getFungAIDatasetSplits(valsize, testsize, trainsize=None, train_transform=None, val_test_transform=None, limit=0, balanced=False, randomSeed=666):
+    #### TODO !!! SHUFFLE?!
     annotations = get_annotation_pandas_df()
     annotations = annotations.dropna()
     annotations = annotations.reset_index(drop=True)
@@ -61,14 +62,16 @@ def getFungAIDatasetSplits(trainsize, valsize, testsize, transform=None, limit=0
             
     if limit: annotations = annotations.iloc[0:limit]
         
+    if trainsize is None: trainsize = len(annotations) - valsize - testsize
+        
     trainset = annotations.iloc[0:trainsize].reset_index(drop=True)
     if valsize: 
         valset = annotations.iloc[trainsize:trainsize+valsize].reset_index(drop=True)
         testset = annotations.iloc[trainsize+valsize:trainsize+valsize+testsize].reset_index(drop=True)
         
-        return FungAIDataset(trainset, transform), FungAIDataset(valset, transform), FungAIDataset(testset, transform)
+        return FungAIDataset(trainset, train_transform), FungAIDataset(valset, val_test_transform), FungAIDataset(testset, val_test_transform)
     else: 
         testset = annotations.iloc[trainsize:trainsize+testsize].reset_index(drop=True)
-        return FungAIDataset(trainset, transform), FungAIDataset(testset, transform)
+        return FungAIDataset(trainset, val_test_transform), FungAIDataset(testset, val_test_transform)
         
     
