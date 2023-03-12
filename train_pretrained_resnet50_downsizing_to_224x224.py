@@ -10,8 +10,8 @@ import torchvision.datasets as datasets # has standard datasets we can import in
 import torchvision.transforms as transforms # transform images, videos, etc.
 import torchvision.models as models
 from resnet import ResNet50
-from FungAIDataset import FungAIDataset
-from preprocessing import fungai_preprocessing_resize_to_224
+from FungAIDataset import getFungAIDatasetSplits
+from preprocessing import resize_224_with_aug_no_norm, resize_224_no_aug_no_norm
 from sklearn.metrics import confusion_matrix
 import mlflow
 from mlflow import pyfunc 
@@ -50,16 +50,20 @@ with mlflow.start_run():
 
     # load data
     dataset_limit = 0
-    mlflow.set_tag("dataset_limit", dataset_limit)
-    dataset = FungAIDataset(transform = fungai_preprocessing_resize_to_224, limit=dataset_limit, balanced=balanced)
-
-    mlflow.set_tag("preprocessing", "fungai_preprocessing")
-
     testsize = 300
-    trainsize = len(dataset)-testsize
-    mlflow.set_tag("trainsize", trainsize)
-    mlflow.set_tag("testsize", testsize)
-    train_set, test_set = torch.utils.data.random_split(dataset, [trainsize, testsize])
+    trainsize = None 
+    valsize = 0
+    mlflow.log_param("dataset_limit", dataset_limit)
+#     mlflow.log_param("valsize", valsize)
+    
+    mlflow.set_tag("train_preprocessing", "resize_224_with_aug_no_norm")
+    mlflow.set_tag("val_preprocessing", "resize_224_no_aug_no_norm")
+
+    train_set, test_set = getFungAIDatasetSplits(valsize, testsize, trainsize=trainsize, train_transform=resize_224_with_aug_no_norm, 
+                                                 val_test_transform=resize_224_no_aug_no_norm, limit=dataset_limit, balanced=balanced)
+    print(f"testsize {len(test_set)} : trainsize {len(train_set)}")
+    mlflow.log_param("testsize", len(test_set))
+    mlflow.log_param("trainsize", len(train_set))
     train_loader = DataLoader(dataset=train_set, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(dataset=test_set, batch_size=batch_size, shuffle=True)
 
