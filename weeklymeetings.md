@@ -4,7 +4,21 @@
 
 ### March 12th
 
-Set up MLFlow and is currently training on balanced dataset (~1500 of each class). Had to fix VPN issues. Trying out segmentation annotations for full images with Paint.NET, hopefully it will speed up the annotation process. 
+I have set up MLFlow. Had to fix VPN issues. 
+
+Trying out segmentation annotations for full images with Paint.NET, hopefully it will speed up the annotation process. 
+
+Tried balancing the datasets. Not enough annotations (~1500 per class), need more. And need to pretrain - we don't balance the finetuning training data for our current pretrained EffNet model! There is no pretrained ResNet for our image sizes (600x600). Our current model EffNet_b7 is pretrained and gets quite good results, ~84% accuracy. Currently downloading ImageNet to pretrain a ResNet, but the training will take too long on our system... 
+
+Questions: 
+
+1) use ITU cluster to pretrain ResNet50 on ImageNet? Or wait for new annotations where 224x224 can be used and finetune the pretrained ResNet50 on that?
+
+2) If the overall approach (sliding window) is the same as the one in the project I'm replicating is it then okay to use a model that is different from theirs? Given that the EfficientNet seems to be better - which is to be expected, it's from 2019/2021 and ResNet is from 2015... 
+
+Bonus question: is it somehow possible to pretrain specific filters on the 28x28 MEDMNIST dataset? Some of the images look kinda similar to our data. It would have to be the first convolutions I imagine. 
+
+
 
 ### March 7th
 As of march 7th there still hasn't been a meeting, as I have cancelled the meetings we've been supposed to have. 
