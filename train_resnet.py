@@ -4,6 +4,7 @@ sys.path.append('../') # add parent dir to path, otherwise can't load ResNet, cu
 import torch
 import torch.nn as nn # all neural network modules, nn.Linear, nn.Conv2d, BatchNorm, Loss functions
 import torch.optim as optim # all optimization algorithms, SGD, Adam, etc.
+import torch.optim.lr_scheduler as lr_scheduler
 import torch.nn.functional as F # all functions that don't have any parameters, relu, sigmoid, softmax, etc.
 from torch.utils.data import DataLoader # gives easier dataset managment and creates mini batches
 import torchvision.datasets as datasets # has standard datasets we can import in a nice way
@@ -11,7 +12,7 @@ import torchvision.transforms as transforms # transform images, videos, etc.
 import torchvision.models as models
 from resnet import ResNet50
 from FungAIDataset import getFungAIDatasetSplits
-from preprocessing import resize_224_with_aug_no_norm, resize_224_no_aug_no_norm
+from preprocessing import resize_600_with_aug_no_norm, resize_600_no_aug_no_norm
 from sklearn.metrics import confusion_matrix
 import mlflow
 from mlflow import pyfunc 
@@ -19,6 +20,7 @@ import mlflow.pytorch
 import numpy as np
 import datetime
 from custom_metric_funcs import get_accuracy_and_confusion_matrix
+from train_early_stopping_and_lr_scheduler import train_early_stopping_lr_scheduler
 
 #setting torch hub directory manually
 torch.hub.set_dir("/home/anaconda/.cache/torch/hub/")
@@ -40,6 +42,10 @@ with mlflow.start_run():
     num_epochs = 20
     threshold = 0.5
     balanced = True 
+    patience = 3
+    lr_stepsize = 5
+    lr_gamma = 0.1 # reduces by factor of 0.1 every lr_stepsize epochs
+    
 
     mlflow.log_param("num_classes", num_classes)
     mlflow.log_param("learning_rate", learning_rate)
@@ -47,6 +53,9 @@ with mlflow.start_run():
     mlflow.log_param("num_epochs", num_epochs)
     mlflow.log_param("threshold", threshold)
     mlflow.log_param("balanced", balanced)
+    mlflow.log_param("patience", patience)
+    mlflow.log_param("lr_stepsize", lr_stepsize)
+    mlflow.log_param("lr_gamma", lr_gamma)
 
     # load data
     dataset_limit = 0
@@ -56,11 +65,10 @@ with mlflow.start_run():
     mlflow.log_param("dataset_limit", dataset_limit)
 #     mlflow.log_param("valsize", valsize)
     
-    mlflow.set_tag("train_preprocessing", "resize_224_with_aug_no_norm")
-    mlflow.set_tag("val_preprocessing", "resize_224_no_aug_no_norm")
+    mlflow.set_tag("train_preprocessing", "resize_600_with_aug_no_norm")
+    mlflow.set_tag("val_preprocessing", "resize_600_no_aug_no_norm")
 
-    train_set, test_set = getFungAIDatasetSplits(valsize, testsize, trainsize=trainsize, train_transform=resize_224_with_aug_no_norm, 
-                                                 val_test_transform=resize_224_no_aug_no_norm, limit=dataset_limit, balanced=balanced)
+    train_set, test_set = getFungAIDatasetSplits(valsize, testsize, trainsize=trainsize, train_transform=resize_600_with_aug_no_norm,                                  val_test_transform=resize_600_no_aug_no_norm, limit=dataset_limit, balanced=balanced)
     print(f"testsize {len(test_set)} : trainsize {len(train_set)}")
     mlflow.log_param("testsize", len(test_set))
     mlflow.log_param("trainsize", len(train_set))
@@ -73,37 +81,17 @@ with mlflow.start_run():
     # loss and optimizer
     criterion = nn.BCELoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    scheduler = lr_scheduler.StepLR(optimizer, step_size=lr_stepsize, gamma=lr_gamma)
 
     # train network
-    model.train() # set model to training mode 
-    for epoch in range(num_epochs):
-        for batch_idx, (data, targets) in enumerate(train_loader): #data is image, target is true y (true class)
-            data = data.to(device=device)
-            targets = targets.to(device=device)
-            targets = targets.float()
-            targets = targets.view(-1, 1) # Reshape target tensors to match output tensor size... TODO CHECK IF THIS IS BUENO
-
-            # forward
-            scores = model(data)
-            loss = criterion(scores, targets)
-
-            # backward
-            optimizer.zero_grad() # set all gradients to 0 before starting to do backpropragation for eatch batch because gradients are accumulated
-            loss.backward()
-
-            # gradient descent or adam step
-            optimizer.step() # update the weights
-            
-        accuracy, cm = get_accuracy_and_confusion_matrix(test_loader, model, device, threshold)
-        print(f"epoch {epoch} CM")
-        print(cm)
-        print(f"accuracy {accuracy}")
-        print("---")
-        mlflow.log_metric("accuracy", accuracy, step=epoch)
-        mlflow.log_metric("tp", cm[0][0], step=epoch)
-        mlflow.log_metric("fp", cm[0][1], step=epoch)
-        mlflow.log_metric("tn", cm[1][1], step=epoch)
-        mlflow.log_metric("fn", cm[1][0], step=epoch)
+    train_losses, val_losses, val_accs, cms, best_val_acc = train_early_stopping_lr_scheduler(model, train_loader, test_loader, optimizer, criterion, num_epochs, patience, scheduler, device, threshold)
+    # log metrics
+    mlflow.log_metric("accuracy", val_accs[-1], step=num_epochs)
+    mlflow.log_metric("best_val_acc", best_val_acc)
+    mlflow.log_metric("tp", cms[-1][0][0], step=num_epochs)
+    mlflow.log_metric("fp", cms[-1][0][1], step=num_epochs)
+    mlflow.log_metric("tn", cms[-1][1][1], step=num_epochs)
+    mlflow.log_metric("fn", cms[-1][1][0], step=num_epochs)
 
     # Define the file path to save the weights
     state_dict_path = '../resnet_weights/finetuned_pretrained_resnet50_downsizing_to_224x224.pth'
