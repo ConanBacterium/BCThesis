@@ -21,6 +21,7 @@ import numpy as np
 import datetime
 from custom_metric_funcs import get_accuracy_and_confusion_matrix
 from train_early_stopping_and_lr_scheduler import train_early_stopping_lr_scheduler
+from mlflow_custom_utils import mlflow_log_files_in_dir
 
 #setting torch hub directory manually
 torch.hub.set_dir("/home/anaconda/.cache/torch/hub/")
@@ -28,9 +29,7 @@ torch.hub.set_dir("/home/anaconda/.cache/torch/hub/")
 mlflow.set_experiment("finetuning_pretrained_resnet50_downsizing_to_224x224")
 
 with mlflow.start_run():
-    ########### TODO !!!!!!!!! ADD CODE AS ARTIFACT !!!!!!!! AND MAYBE CODE OF HOMEMADE MODULES THAT ARE IMPORTED? 
-    ############ AND THE MODEL !!! VERY IMPORTANT! we only save the weights of the model, and thus if the model changes they will become
-    ############ useless... 
+    mlflow_log_files_in_dir("../", mlflow)
     
     # set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
