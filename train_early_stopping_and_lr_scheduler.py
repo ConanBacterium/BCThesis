@@ -5,17 +5,17 @@ import numpy as np
 from collections import defaultdict
 from sklearn.metrics import confusion_matrix
 
-def train_early_stopping_lr_scheduler(model, train_loader, val_loader, optimizer, criterion, n_epochs, patience, lr_scheduler, device, threshold):
-#     print(f"model: {model}")
-#     print(f"train_loader: {train_loader}")
-#     print(f"val_loader: {val_loader}")
-#     print(f"optimizer: {optimizer}")
-#     print(f"criterion: {criterion}")
-#     print(f"n_epochs: {n_epochs}")
-#     print(f"patience: {patience}")
-#     print(f"lr_scheduler: {lr_scheduler}")
-#     print(f"device: {device}")
-#     print(f"threshold: {threshold}")
+def print_and_log(string, filename):
+    with open(filename, 'a') as file:
+        file.write(string)
+        file.write("\n")
+    print(string)
+
+def train_early_stopping_lr_scheduler(model, train_loader, val_loader, optimizer, criterion, n_epochs, patience, lr_scheduler, device, threshold, run_id, weight_path):
+    log_path = f"../run_logs/{run_id}.txt"
+    with open(log_path, 'w') as file:
+        # Append a string to the file with a newline character
+        file.write("Log for {run_id}.\n")
     
     train_loss = []
     val_loss = []
@@ -27,13 +27,13 @@ def train_early_stopping_lr_scheduler(model, train_loader, val_loader, optimizer
     
     model.train() # set model to training mode 
     for epoch in range(n_epochs):
-        print(f"training on epoch: {epoch}")
+        print_and_log(f"Training epoch {epoch}", log_path)
         epoch_loss = 0.0
         for batch_idx, (data, targets) in enumerate(train_loader): #data is image, target is true y (true class)
             data = data.to(device=device)
             targets = targets.to(device=device)
             targets = targets.float()
-            targets = targets.view(-1, 1) # Reshape target tensors to match output tensor size... TODO CHECK IF THIS IS BUENO
+            targets = targets.view(-1, 1) # Reshape target tensors to match output tensor size... TODO put this in Dataset.__getitem__ method??
 
             # forward
             scores = model(data)
@@ -49,6 +49,7 @@ def train_early_stopping_lr_scheduler(model, train_loader, val_loader, optimizer
     
     
         train_loss.append(epoch_loss / len(train_loader))
+        print_and_log(f"train loss: {train_loss}", log_path)
         # Evaluate the model on the validation data
         model.eval()
         epoch_loss = 0.0
@@ -87,13 +88,17 @@ def train_early_stopping_lr_scheduler(model, train_loader, val_loader, optimizer
         
             accuracy = float(epoch_num_correct)/float(epoch_num_samples)*100
             val_acc.append(accuracy)
-            print(f"epoch {epoch} with validation accuracy {val_acc[-1]} and CM")
-            print(cm[-1])
+            print_and_log(f"epoch {epoch} with validation accuracy {val_acc[-1]} and CM", log_path)
+            print_and_log(np.array2string(cm[-1]), log_path)
 
             # Check if the validation accuracy has improved
+            #### TODO use other metric 
             if val_acc[-1] > best_val_acc:
                 best_val_acc = val_acc[-1]
                 epochs_since_improvement = 0
+               
+                # Save the weights
+                torch.save(model.state_dict(), weight_path)
             else:
                 epochs_since_improvement += 1
 
@@ -101,7 +106,6 @@ def train_early_stopping_lr_scheduler(model, train_loader, val_loader, optimizer
                     lr_scheduler.step()
 
             if epochs_since_improvement >= patience:
-                print('Stopping training after {} epochs without improvement.'.format(patience))
+                print_and_log('Stopping training after {} epochs without improvement.'.format(patience), log_path)
                 break
-
-    return train_loss, val_loss, val_acc, cm, best_val_acc
+    return train_loss, val_loss, val_acc, cm, best_val_acc, epoch
