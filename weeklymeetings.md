@@ -19,7 +19,7 @@ Questions:
 
 3) How to best insert metadata? 
 
-4) It's a no-go when data augmentation produces positive training examples that an annotator would classify as negative, right? And when using a pretrained model where it's recommended that you normalize with a certain mean and std, what do you do if that normalization renders many of the training examples unrecognizable?
+4) Look at architecture to see if dimensions hold up, and maybe look at adding more layers to make the feature space smaller... Or maybe make the FC-layer bigger given that the feature space is big? 
 
 5) Can I unbalance the dataset, but balance the learning rate or loss function? So scale the lower-balanced class. Or maybe augment the lower-balanced class? hmm. 
 
