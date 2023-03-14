@@ -2,6 +2,7 @@ import torch
 from sklearn.metrics import confusion_matrix
 
 def get_accuracy_and_confusion_matrix(loader, model, device, threshold):
+    # TODO put model.eval()
     num_correct = 0
     num_samples = 0
     model.eval() # set model to evaluation mode
