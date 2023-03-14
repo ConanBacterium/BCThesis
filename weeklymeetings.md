@@ -25,6 +25,8 @@ Questions:
 
 6) Pytorch model weights are around 250MB for effnet and 100MB for ResNet50, and the batches of 20 pngs are around 8MB. I make them into tensors, so maybe they become bigger, so let's just say the batch is 50MB. This shouldn't be a lot of memory, yet if I increase batch size much more I get memory error... 
 
+7) Does batch normalization on many layers give weird results in a highly varied dataset with relatively small batches (20 imgs)... ?  
+
 Bonus question: is it somehow possible to pretrain specific filters on the 28x28 MEDMNIST dataset? Some of the images look kinda similar to our data. It would have to be the first convolutions I imagine. 
 
 UPDATE: 21:14 MAJOR BUGFIX! only returned annotation of index 19 in FungAIDataset __getitem__ method. 
