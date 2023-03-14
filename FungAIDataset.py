@@ -45,6 +45,9 @@ class FungAIDataset(Dataset):
     
 # if given valsize = 0 it will only return train and test Pytorch datasets. 
 def getFungAIDatasetSplits(valsize, testsize, trainsize=None, train_transform=None, val_test_transform=None, limit=0, balanced=False, randomSeed=666):
+    
+    
+    #### 
     #### TODO !!! SHUFFLE?!
     annotations = get_annotation_pandas_df()
     annotations = annotations.dropna()
@@ -63,6 +66,9 @@ def getFungAIDatasetSplits(valsize, testsize, trainsize=None, train_transform=No
     if limit: annotations = annotations.iloc[0:limit]
         
     if trainsize is None: trainsize = len(annotations) - valsize - testsize
+        
+    # TODO !! MAKE SHURE trainsize - valsize - testsize  => 0
+    assert trainsize - valsize - testsize >= 0
         
     trainset = annotations.iloc[0:trainsize].reset_index(drop=True)
     if valsize: 
