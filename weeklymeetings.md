@@ -23,6 +23,8 @@ Questions:
 
 5) Can I unbalance the dataset, but balance the learning rate or loss function? So scale the lower-balanced class. Or maybe augment the lower-balanced class? hmm. 
 
+6) Pytorch model weights are around 250MB for effnet and 100MB for ResNet50, and the batches of 20 pngs are around 8MB. I make them into tensors, so maybe they become bigger, so let's just say the batch is 50MB. This shouldn't be a lot of memory, yet if I increase batch size much more I get memory error... 
+
 Bonus question: is it somehow possible to pretrain specific filters on the 28x28 MEDMNIST dataset? Some of the images look kinda similar to our data. It would have to be the first convolutions I imagine. 
 
 UPDATE: 21:14 MAJOR BUGFIX! only returned annotation of index 19 in FungAIDataset __getitem__ method. 
