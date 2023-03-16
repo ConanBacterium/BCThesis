@@ -29,7 +29,9 @@ Questions:
 
 8) What to do with unsharp training examples? Skip or negative 
 
-9) What does higher accuracy on unbalanced as compared to balanced mean? ... 
+9) What does higher accuracy on unbalanced as compared to balanced mean? ...
+
+10) Is it a good idea to use balanced classes in development phase to reduce training time, and then when best parameters have been found you choose a distribution that looks like the real world?
 
 Bonus question: is it somehow possible to pretrain specific filters on the 28x28 MEDMNIST dataset? Some of the images look kinda similar to our data. It would have to be the first convolutions I imagine. 
 
