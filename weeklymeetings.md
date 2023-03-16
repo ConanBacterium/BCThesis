@@ -29,6 +29,8 @@ Questions:
 
 8) What to do with unsharp training examples? Skip or negative 
 
+9) What does higher accuracy on unbalanced as compared to balanced mean? ... 
+
 Bonus question: is it somehow possible to pretrain specific filters on the 28x28 MEDMNIST dataset? Some of the images look kinda similar to our data. It would have to be the first convolutions I imagine. 
 
 UPDATE: 21:14 MAJOR BUGFIX! only returned annotation of index 19 in FungAIDataset __getitem__ method. 
