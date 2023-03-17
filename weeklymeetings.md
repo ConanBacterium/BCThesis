@@ -26,6 +26,7 @@ Questions:
 6) Pytorch model weights are around 250MB for effnet and 100MB for ResNet50, and the batches of 20 pngs are around 8MB. I make them into tensors, so maybe they become bigger, so let's just say the batch is 50MB. This shouldn't be a lot of memory, yet if I increase batch size much more I get memory error... 
 
 7) Does batch normalization on many layers give weird results in a highly varied dataset with relatively small batches (20 imgs)... ?  
+7.5) Normalizing the data makes many training examples unrecognizable, but it gives much higher accuracy?? 
 
 8) What to do with unsharp training examples? Skip or negative 
 
