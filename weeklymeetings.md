@@ -1,16 +1,15 @@
+* [19th of March 2023 (pre weekly-meetings](#march-19th)
+
 * [12th of March 2023 (pre weekly-meetings](#march-12th)
 
 * [7th March 2023 (progress as of 7th March, pre weekly-meetings)](#march-7th)
 
-### March 12th
+### March 19th
 
-I have set up MLFlow. Had to fix VPN issues. 
+##### Progress overall
+asdsad
 
-Trying out segmentation annotations for full images with Paint.NET, hopefully it will speed up the annotation process. 
-
-Tried balancing the datasets. Not enough annotations (~1500 per class), need more. And need to pretrain - we don't balance the finetuning training data for our current pretrained EffNet model! There is no pretrained ResNet for our image sizes (600x600). Our current model EffNet_b7 is pretrained and gets quite good results, ~84% accuracy. Currently downloading ImageNet to pretrain a ResNet, but the training will take too long on our system... 
-
-Questions: 
+#### Questions: 
 
 1) use ITU cluster to pretrain ResNet50 on ImageNet? Or wait for new annotations where 224x224 can be used and finetune the pretrained ResNet50 on that?
 
@@ -37,6 +36,14 @@ Questions:
 11) Read somewhere that I need to have a public dataset for the bachelor report?  
 
 Bonus question: is it somehow possible to pretrain specific filters on the 28x28 MEDMNIST dataset? Some of the images look kinda similar to our data. It would have to be the first convolutions I imagine. 
+
+### March 12th
+
+I have set up MLFlow. Had to fix VPN issues. 
+
+Trying out segmentation annotations for full images with Paint.NET, hopefully it will speed up the annotation process. 
+
+Tried balancing the datasets. Not enough annotations (~1500 per class), need more. And need to pretrain - we don't balance the finetuning training data for our current pretrained EffNet model! There is no pretrained ResNet for our image sizes (600x600). Our current model EffNet_b7 is pretrained and gets quite good results, ~84% accuracy. Currently downloading ImageNet to pretrain a ResNet, but the training will take too long on our system... 
 
 UPDATE: 21:14 MAJOR BUGFIX! only returned annotation of index 19 in FungAIDataset __getitem__ method. 
 
