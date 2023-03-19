@@ -7,7 +7,14 @@
 ### March 19th
 
 ##### Progress overall
-asdsad
+
+1) Wrote ResNet50 from Scratch
+2) Wrote custom pytorch datasets that can be balanced if needed
+3) wrote training function that has early stopping with a learning rate scheduler
+4) currently writing function to optimize threshold to given metric function
+5) Wrote training script for finetuning EfficientNet, for finetuning ResNet50 by resizing training imgs to 224x224 and one for training ResNet50 from scratch. 
+
+Need to do cross validation and let each fold become a model which will be put in ensemble. 
 
 #### Questions: 
 
@@ -25,7 +32,7 @@ asdsad
 6) Pytorch model weights are around 250MB for effnet and 100MB for ResNet50, and the batches of 20 pngs are around 8MB. I make them into tensors, so maybe they become bigger, so let's just say the batch is 50MB. This shouldn't be a lot of memory, yet if I increase batch size much more I get memory error... 
 
 7) Does batch normalization on many layers give weird results in a highly varied dataset with relatively small batches (20 imgs)... ?  
-7.5) Normalizing the data makes many training examples unrecognizable, but it gives much higher accuracy?? 
+7.5) Normalizing the data makes many training examples unrecognizable, but it gives much higher accuracy? I guess this is fine, since no pattern in the data is removed, just rescaled.
 
 8) What to do with unsharp training examples? Skip or negative 
 
@@ -33,7 +40,7 @@ asdsad
 
 10) Is it a good idea to use balanced classes in development phase to reduce training time, and then when best parameters have been found you choose a distribution that looks like the real world?
 
-11) Read somewhere that I need to have a public dataset for the bachelor report?  
+11) I read somewhere that I need to have a public dataset for the bachelor report?  
 
 Bonus question: is it somehow possible to pretrain specific filters on the 28x28 MEDMNIST dataset? Some of the images look kinda similar to our data. It would have to be the first convolutions I imagine. 
 
