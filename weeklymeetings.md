@@ -34,6 +34,8 @@ Questions:
 
 10) Is it a good idea to use balanced classes in development phase to reduce training time, and then when best parameters have been found you choose a distribution that looks like the real world?
 
+11) Read somewhere that I need to have a public dataset for the bachelor report?  
+
 Bonus question: is it somehow possible to pretrain specific filters on the 28x28 MEDMNIST dataset? Some of the images look kinda similar to our data. It would have to be the first convolutions I imagine. 
 
 UPDATE: 21:14 MAJOR BUGFIX! only returned annotation of index 19 in FungAIDataset __getitem__ method. 
