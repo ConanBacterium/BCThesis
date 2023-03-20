@@ -12,28 +12,46 @@ import torchvision.transforms as transforms # transform images, videos, etc.
 import torchvision.models as models
 from resnet import ResNet50
 from FungAIDataset import getFungAIDatasetSplits
-from preprocessing import preprocess_effnetb7
+from preprocessing import preprocess_effnetb7, resize_600_no_aug_no_norm, resize_600_with_aug_no_norm, resize_600_no_aug_with_norm, resize_600_with_aug_with_norm
 from sklearn.metrics import confusion_matrix
+import numpy as np
+import datetime
+from custom_metric_funcs import get_accuracy_and_confusion_matrix, get_threshold_optimized_for_f1
+from train_early_stopping_and_lr_scheduler import train_early_stopping_lr_scheduler
+from mlflow_custom_utils import mlflow_log_files_in_dir, copy_to_dir
+from graph_generators import generate_val_train_loss_graphs
+from FC_for_effnet import EffnetDenseNet
+import uuid
+from pathlib import Path
 import mlflow
 from mlflow import pyfunc 
 import mlflow.pytorch
-import numpy as np
-import datetime
-from custom_metric_funcs import get_accuracy_and_confusion_matrix
-from train_early_stopping_and_lr_scheduler import train_early_stopping_lr_scheduler
-from mlflow_custom_utils import mlflow_log_files_in_dir
-from graph_generators import generate_val_train_loss_graphs
-from FC_for_effnet import EffnetDenseNet
 
+def print_and_log(string, filename):
+    with open(filename, 'a') as file:
+        file.write(string)
+        file.write("\n")
+    print(string)
+
+python_files_copydir = Path(f"run_code/{uuid.uuid4()}") # directory where all .py files of parent folder will be stored and saved as artifacts
+copy_to_dir("../", python_files_copydir) # COPIES OLD VERSION OF FILES?! very odd bug. 
+    
+    
 #setting torch hub directory manually
 torch.hub.set_dir("/home/anaconda/.cache/torch/hub/")
 
-mlflow.set_experiment("effnetb7")
+mlflow.set_experiment("effnetb7_test")
 
 with mlflow.start_run():
     mlflow_run_id = mlflow.active_run().info.run_id
     
-    mlflow_log_files_in_dir("../", mlflow)
+    log_path = f"../run_logs/{mlflow_run_id}.txt"
+    with open(log_path, 'w') as file:
+        # Append a string to the file with a newline character
+        file.write("Log for {mlflow_run_id}.\n")
+    
+    
+    mlflow_log_files_in_dir(python_files_copydir, mlflow) 
     mlflow.log_param("executed_script", __file__)
     
     # set device
@@ -43,7 +61,7 @@ with mlflow.start_run():
     num_classes=1
     learning_rate = 0.0005
     batch_size = 20 # tested batch_size of 64, not enough memory for that... 
-    num_epochs = 50
+    num_epochs = 2
     threshold = 0.5
     balanced = True 
     patience = 11
@@ -64,18 +82,18 @@ with mlflow.start_run():
     mlflow.log_param("decay_rate", decay_rate)
 
     # load data
-    dataset_limit = 0
-    testsize = 400
+    dataset_limit = 40
+    testsize = 20 # roughly 20%
     trainsize = None 
     valsize = 0
     mlflow.log_param("dataset_limit", dataset_limit)
 #     mlflow.log_param("valsize", valsize)
     
-    mlflow.set_tag("train_preprocessing", "preprocess_effnetb7")
-    mlflow.set_tag("val_preprocessing", "preprocess_effnetb7")
+    mlflow.log_param("train_preprocessing", "preprocess_effnetb7")
+    mlflow.log_param("val_preprocessing", "preprocess_effnetb7")
 
     train_set, test_set = getFungAIDatasetSplits(valsize, testsize, trainsize=trainsize, train_transform=preprocess_effnetb7,                                  val_test_transform=preprocess_effnetb7, limit=dataset_limit, balanced=balanced)
-    print(f"testsize {len(test_set)} : trainsize {len(train_set)}")
+    print_and_log(f"testsize {len(test_set)} : trainsize {len(train_set)}", log_path)
     mlflow.log_param("testsize", len(test_set))
     mlflow.log_param("trainsize", len(train_set))
     train_loader = DataLoader(dataset=train_set, batch_size=batch_size, shuffle=True)
@@ -89,12 +107,15 @@ with mlflow.start_run():
 
     # loss and optimizer
     criterion = nn.BCELoss()
+    criterion.to(device)
     optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=decay_rate)
     scheduler = lr_scheduler.StepLR(optimizer, step_size=lr_stepsize, gamma=lr_gamma)
 
     # train network
-    train_losses, val_losses, val_accs, cms, best_val_acc, last_epoch = train_early_stopping_lr_scheduler(model, train_loader, test_loader, optimizer, criterion, num_epochs, patience, scheduler, device, threshold, mlflow_run_id, "../model_weights/effnetb7.pth")
-    mlflow.log_tag("last_epoch", last_epoch)
+    train_losses, val_losses, val_accs, cms, best_val_acc, last_epoch, best_epoch = train_early_stopping_lr_scheduler(model, train_loader, test_loader, optimizer, criterion, num_epochs, patience, scheduler, device, threshold, mlflow_run_id, "../model_weights/effnetb7.pth", log_path)
+    mlflow.log_artifact(f"../run_logs/{mlflow_run_id}.txt")
+    mlflow.log_metric("last_epoch", last_epoch)
+    mlflow.log_metric("best_epoch", best_epoch)
     # save val_train_graph
     val_train_loss_graph_path = f"../graphs/{mlflow_run_id}.png"
     generate_val_train_loss_graphs(train_losses, val_losses, val_train_loss_graph_path)
@@ -102,19 +123,26 @@ with mlflow.start_run():
     # log metrics
 #     mlflow.log_metric("accuracy", val_accs[-1], step=num_epochs)
     mlflow.log_metric("best_val_acc", best_val_acc)
-    mlflow.log_metric("tp", cms[-1][0][0], step=num_epochs)
-    mlflow.log_metric("fp", cms[-1][0][1], step=num_epochs)
-    mlflow.log_metric("tn", cms[-1][1][1], step=num_epochs)
-    mlflow.log_metric("fn", cms[-1][1][0], step=num_epochs)
+    
+    
+    ###### GET OPTIMIZED THRESHOLD 
+    best_threshold, f1_score, cm = get_threshold_optimized_for_f1(test_loader, model, device)
+    print_and_log(f"best epoch {best_epoch} with threshold: {best_threshold}, f1 score: {f1_score} and CM:", log_path)
+    print_and_log(str(cm), log_path)
+    mlflow.log_metric("best_threshold_for_f1", best_threshold)
+    mlflow.log_metric("f1_score_for_best_threshold", f1_score)
+    mlflow.log_metric("tp", cm[1][1], step=last_epoch)
+    mlflow.log_metric("fp", cm[0][1], step=last_epoch)
+    mlflow.log_metric("tn", cm[0][0], step=last_epoch)
+    mlflow.log_metric("fn", cm[1][0], step=last_epoch)
 
 #     # Define the file path to save the weights
-#     # Save a checkpoint after every epoch
     checkpoint_path = f"../model_weights/effnetb17_checkpoint_{last_epoch}.pt"
     torch.save({
-        'epoch': epoch,
+        'epoch': last_epoch,
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
-        'train_loss': train_loss
+        'train_loss': train_losses[-1]
     }, checkpoint_path)
 
     mlflow.pytorch.log_model(model, "models")
