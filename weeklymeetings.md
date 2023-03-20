@@ -11,6 +11,8 @@ https://github.com/BMIRDS/deepslide
 ##### Main takeaways from meeting
 * Find public dataset where this approach works and then compare with our data. (rad imagenet, grand-challenge patchcamelyon)
 -- Downloading this rn: https://www.i3s.up.pt/digitalpathology/
+---- big whole slide images as .svs files. Need to find out what zoom level looks most like FungAI images, to make sure they're as comparable as possible? 
+---- need to figure that out with Ulf..... 
 
 * Don't augment test set unless you're completely sure about what you're doing and can justify it. 
 
