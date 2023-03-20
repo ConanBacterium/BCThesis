@@ -10,6 +10,7 @@ https://github.com/BMIRDS/deepslide
 
 ##### Main takeaways from meeting
 * Find public dataset where this approach works and then compare with our data. (rad imagenet, grand-challenge patchcamelyon)
+-- Downloading this rn: https://www.i3s.up.pt/digitalpathology/
 
 * Don't augment test set unless you're completely sure about what you're doing and can justify it. 
 
