@@ -8,6 +8,15 @@ https://github.com/BMIRDS/deepslide
 
 ### March 19th
 
+##### Main takeaways from meeting
+* Find public dataset where this approach works and then compare with our data. (rad imagenet, grand-challenge patchcamelyon)
+
+* Don't augment test set unless you're completely sure about what you're doing and can justify it. 
+
+* Show that increasing train size increases accuracy. 
+
+* Start writing report. 
+
 ##### Progress overall
 
 1) Wrote ResNet50 from Scratch
@@ -29,30 +38,38 @@ After that the bare minimum of the project is done and I can experiment to try a
 #### Questions: 
 
 1) use ITU cluster to pretrain ResNet50 on ImageNet? Or wait for new annotations where 224x224 can be used and finetune the pretrained ResNet50 on that?
+--- IRRELEVANT
 
 2) If the overall approach (sliding window) is the same as the one in the project I'm replicating is it then okay to use a model that is different from theirs? Given that the EfficientNet seems to be better - which is to be expected, it's from 2019/2021 and ResNet is from 2015... 
-2.5) Actually, our data looks so alike that maybe it's fine to not normalize at all?  
+---- YES IT'S OKAY
 
 3) How to best insert metadata? 
+--- DON'T INSERT METADATA, but add it as a label during training. This way the model learns what it is looking at. Adding it as input will lead to over fitting. 
 
 4) Look at architecture to see if dimensions hold up, and maybe look at adding more layers to make the feature space smaller... Or maybe make the FC-layer bigger given that the feature space is big? 
+--- DIDN'T DO THIS, probably not necessary. 
 
 5) Can I unbalance the dataset, but balance the learning rate or loss function? So scale the lower-balanced class. Or maybe augment the lower-balanced class? hmm. 
+--- AUGMENT lower-balanced class
 
 6) Pytorch model weights are around 250MB for effnet and 100MB for ResNet50, and the batches of 20 pngs are around 8MB. I make them into tensors, so maybe they become bigger, so let's just say the batch is 50MB. This shouldn't be a lot of memory, yet if I increase batch size much more I get memory error... 
+--- IRRELEVANT
 
 7) Does batch normalization on many layers give weird results in a highly varied dataset with relatively small batches (20 imgs)... ?  
 7.5) Normalizing the data makes many training examples unrecognizable, but it gives much higher accuracy? I guess this is fine, since no pattern in the data is removed, just rescaled.
+--- IRRELEVANT
 
 8) What to do with unsharp training examples? Skip or negative 
+--- EXPERIMENT WITH IT... Try training as multilabel and try training without multilabel and compare, blabla. 
 
 9) What does higher accuracy on unbalanced as compared to balanced mean? ...
+--- IRRELEVANT
 
 10) Is it a good idea to use balanced classes in development phase to reduce training time, and then when best parameters have been found you choose a distribution that looks like the real world?
-
-11) I read somewhere that I need to have a public dataset for the bachelor report?  
+--- SURE....? --- IRRELEVANT
 
 Bonus question: is it somehow possible to pretrain specific filters on the 28x28 MEDMNIST dataset? Some of the images look kinda similar to our data. It would have to be the first convolutions I imagine. 
+--- MAYBE, but don't worry about it
 
 ### March 12th
 
