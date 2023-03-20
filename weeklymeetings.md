@@ -16,6 +16,14 @@
 
 Need to do cross validation and let each fold become a model which will be put in ensemble. 
 
+Need to write script to make masks from Paint.NET annotations. 
+
+Need to write sliding window script. 
+
+Need to write report. 
+
+After that the bare minimum of the project is done and I can experiment to try and achieve a better model.
+
 #### Questions: 
 
 1) use ITU cluster to pretrain ResNet50 on ImageNet? Or wait for new annotations where 224x224 can be used and finetune the pretrained ResNet50 on that?
