@@ -35,6 +35,11 @@ def threshold_optimized_for_metricfunc(y_true, y_probabilities, metricfunc):
     """
     metricfunc takes confusion matrix and returns metric score
     """
+    #convert y_true and y_probabilities to normal float
+    y_true = [float(e) for e in y_true]
+    y_probabilities = [float(e) for e in y_probabilities]
+    
+    
     candidate_thresholds = np.linspace(0, 0.95, 150)
     best_threshold = 0.5
     best_metric_score = 0
@@ -42,8 +47,22 @@ def threshold_optimized_for_metricfunc(y_true, y_probabilities, metricfunc):
     
     for candidate_threshold in candidate_thresholds:
         y_preds = [1.0 if res >= candidate_threshold else 0.0 for res in y_probabilities]
-        # TODO  calculate CM instead and then pass that to metricfunc so we can get full information ... !!! 
-        cm = confusion_matrix(y_true, y_preds) 
+        
+        # sklearn bug if there are only TN or 
+        if len(set(y_preds)) == 1 and len(set(y_true)) == 1:
+            LEN = len(y_preds)
+            TP = 0
+            FP = 0
+            TN = 0
+            FN = 0
+            if y_preds[0] == y_true[0] and y_true[0] == 0: TN = LEN 
+            elif y_preds[0] != y_true[0] and y_true[0] == 0: FP = LEN 
+            elif y_preds[0] == y_true[0] and y_true[0] == 1: TP = LEN
+            elif y_preds[0] != y_true[0] and y_true[0] == 1: FN = LEN
+            
+            cm = np.array([[TN, FP], [FN, TP]])
+        else: cm = confusion_matrix(y_true, y_preds) # normal case. 
+        
         metric = metricfunc(cm)
         
         if metric > best_metric_score: 
@@ -76,6 +95,10 @@ def get_ytrue_and_yprobabilities(loader, model, device):
     
 def get_threshold_optimized_for_f1(loader, model, device):
     y_true, y_probabilities = get_ytrue_and_yprobabilities(loader, model, device)
+#     print("DEBUG!")
+#     print(y_true[0])
+#     print(y_probabilities[0])
+#     print("DEBUG!")
     return threshold_optimized_for_metricfunc(y_true, y_probabilities, f1)
 
 def get_threshold_optimized_for_recall(loader, model, device):
