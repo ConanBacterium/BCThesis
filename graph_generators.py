@@ -16,11 +16,11 @@ def generate_val_train_loss_graphs(train_losses, val_losses, targetfile):
     plt.legend()
     
     
-    ##### DEBUGPRINT
-    print("DEBUGPRINT !!! generate_val_train_loss_graphs train_losses")
-    print(train_losses)
-    print("DEBUGPRINT !!! generate_val_train_loss_graphs val_losses")
-    print(val_losses)
+#     ##### DEBUGPRINT
+#     print("DEBUGPRINT !!! generate_val_train_loss_graphs train_losses")
+#     print(train_losses)
+#     print("DEBUGPRINT !!! generate_val_train_loss_graphs val_losses")
+#     print(val_losses)
     
 
     # Display the plot
