@@ -119,19 +119,18 @@ def getFungAIDatasetSplits(valsize, testsize, trainsize=None, train_transform=No
     
     train_df, val_df, test_df = create_balanced_splits(annotations, trainsize, valsize, testsize)
     
+    if not balanced: # not necessary to print if balanced, since then the lengths of the classes are obvious
+        train_neg_len = len(train_df[train_df['Hyfer'] == 0])
+        train_pos_len = len(train_df[train_df["Hyfer"] > 0])
+        val_neg_len = len(val_df[val_df['Hyfer'] == 0])
+        val_pos_len = len(val_df[val_df["Hyfer"] > 0])
+        test_neg_len = len(test_df[test_df['Hyfer'] == 0])
+        test_pos_len = len(test_df[test_df["Hyfer"] > 0])
+        print(f"# train pos: {train_pos_len} | #train neg: {train_neg_len}")
+        print(f"# val pos: {val_pos_len} | #val neg: {val_neg_len}")
+        print(f"# test pos: {test_pos_len} | #test neg: {test_neg_len}")
+    
     if valsize: 
         return FungAIDataset(train_df, train_transform), FungAIDataset(val_df, val_test_transform), FungAIDataset(test_df, val_test_transform)
     else: 
         return FungAIDataset(train_df, train_transform), FungAIDataset(test_df, val_test_transform)
-        
-#     trainset = annotations.iloc[0:trainsize].reset_index(drop=True)
-#     if valsize: 
-#         valset = annotations.iloc[trainsize:trainsize+valsize].reset_index(drop=True)
-#         testset = annotations.iloc[trainsize+valsize:trainsize+valsize+testsize].reset_index(drop=True)
-        
-#         return FungAIDataset(trainset, train_transform), FungAIDataset(valset, val_test_transform), FungAIDataset(testset, val_test_transform)
-#     else: 
-#         testset = annotations.iloc[trainsize:trainsize+testsize].reset_index(drop=True)
-#         return FungAIDataset(trainset, val_test_transform), FungAIDataset(testset, val_test_transform)
-        
-    
