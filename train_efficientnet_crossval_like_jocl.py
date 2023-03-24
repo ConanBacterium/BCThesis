@@ -40,7 +40,7 @@ copy_to_dir("../", python_files_copydir) # COPIES OLD VERSION OF FILES?! very od
 #setting torch hub directory manually
 torch.hub.set_dir("/home/anaconda/.cache/torch/hub/")
 
-mlflow.set_experiment("effnetb7_5fold_crossval")
+mlflow.set_experiment("effnetb7_jocl_5foldcrossval")
 
 with mlflow.start_run():
     mlflow_run_id = mlflow.active_run().info.run_id
@@ -63,7 +63,7 @@ with mlflow.start_run():
     batch_size = 20 # tested batch_size of 64, not enough memory for that... 
     num_epochs = 50
     threshold = 0.5
-    balanced = True 
+    balanced = False 
     patience = 11
     lr_stepsize = 5
     lr_gamma = 0.1 # reduces by factor of 0.1 every lr_stepsize epochs
@@ -93,22 +93,22 @@ with mlflow.start_run():
     dataset_length = len(train_test_dataset_tuples[0][0]) + len(train_test_dataset_tuples[0][1])
     mlflow.log_param("dataset_length", dataset_length)
     print_and_log(f"dataset_length: {dataset_length}", log_path)
-    
-    # initialize network
-    model = models.efficientnet_b7(pretrained=True)
-    for param in model.parameters(): param.requires_grad = False
-    model.classifier = EffnetDenseNet()
-    model.to(device)
-    
-    weights_path =  f"../model_weights/effnet_crossval/effnetb7.pth"
-    
-    total_tp = 0
+    #     weights_path =  f"../model_weights/effnet_crossval/effnetb7.pth"
+
     total_fp = 0
-    total_tn = 0
+    total_tp = 0
     total_fn = 0
+    total_tn = 0
     
     for i, (train_dataset, test_dataset) in enumerate(train_test_dataset_tuples):
-        if i > 0: model.load_state_dict(torch.load(weights_path)) # if not first fold load best model from last fold
+#         if i > 0: model.load_state_dict(torch.load(f"../model_weights/effnet_crossval/fold_{i-1}_effnetb7.pth")) # if not first fold load best model from last fold
+        
+        # initialize network
+        model = models.efficientnet_b7(pretrained=True)
+        for param in model.parameters(): param.requires_grad = False
+        model.classifier = EffnetDenseNet()
+        model.to(device)
+        
         print_and_log(f"----------- TRAINING FOLD {i} -----------", log_path)
         train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
         test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=True)
@@ -120,27 +120,38 @@ with mlflow.start_run():
         scheduler = lr_scheduler.StepLR(optimizer, step_size=lr_stepsize, gamma=lr_gamma)
 
         # train network
-        train_losses, val_losses, val_accs, cms, best_val_acc, last_epoch, best_epoch = train_early_stopping_lr_scheduler(model, train_loader, test_loader, optimizer, criterion, num_epochs, patience, scheduler, device, threshold, mlflow_run_id, weights_path, log_path)
+        train_losses, val_losses, val_accs, cms, best_val_acc, last_epoch, best_epoch = train_early_stopping_lr_scheduler(model, train_loader, test_loader, optimizer, criterion, num_epochs, patience, scheduler, device, threshold, mlflow_run_id, f"../model_weights/effnet_crossval/fold_{i}_effnetb7.pth", log_path)
         
         # save val_train_graph
         val_train_loss_graph_path = f"../graphs/fold_{i}_{mlflow_run_id}.png"
         generate_val_train_loss_graphs(train_losses, val_losses, val_train_loss_graph_path)
         mlflow.log_artifact(val_train_loss_graph_path)
 
+    
         ###### GET OPTIMIZED THRESHOLD 
         best_threshold, f1_score, cm = get_threshold_optimized_for_f1(test_loader, model, device)
         print_and_log(f"best epoch {best_epoch} with threshold: {best_threshold}, f1 score: {f1_score} and CM:", log_path)
         print_and_log(str(cm), log_path)
         
-        mlflow.log_metric(f"fold_{i}_best_threshold", best_threshold)
+        tp = cm[1][1]
+        fp = cm[0][1]
+        tn = cm[0][0]
+        fn = cm[1][0]
         
-        total_tp += cm[1][1]
-        total_fp += cm[0][1]
-        total_tn += cm[0][0]
-        total_fn += cm[1][0]
+        total_tp += tp
+        total_fp += fp
+        total_tn += tn
+        total_fn += fn
+
+        mlflow.log_metric(f"fld{i}_best_threshold_for_f1", best_threshold)
+        mlflow.log_metric(f"fld{i}_f1_score_for_best_threshold", f1_score)
+        mlflow.log_metric(f"fld{i}_tp", tp, step=best_threshold)
+        mlflow.log_metric(f"fld{i}_fp", fp, step=best_threshold)
+        mlflow.log_metric(f"fld{i}_tn", tn, step=best_threshold)
+        mlflow.log_metric(f"fld{i}_fn", fn, step=best_threshold)
         
-    # final CM
-    mlflow.log_metric(f"total_tp", total_tp)
-    mlflow.log_metric(f"total_fp", total_fp)
-    mlflow.log_metric(f"total_tn", total_tn)
-    mlflow.log_metric(f"total_fn", total_fn)
+    mlflow.log_metric("total_tp", total_tp)
+    mlflow.log_metric("total_fp", total_fp)
+    mlflow.log_metric("total_tn", total_tn)
+    mlflow.log_metric("total_fn", total_fn)
+    
