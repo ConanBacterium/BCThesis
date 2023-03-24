@@ -6,6 +6,7 @@ from pathlib import Path
 from PIL import Image
 # import mysql.connector
 from get_annotation_pandas_df import get_annotation_pandas_df
+from sklearn.model_selection import KFold
 
 class FungAIDataset(Dataset):
     def __init__(self, annotations_pd_df=None, transform=None, limit=0, balanced=False):
@@ -89,6 +90,37 @@ def create_balanced_splits(annotations, trainsize, valsize, testsize):
     test_df = pd.concat([pos_samples_test, neg_samples_test])
     
     return train_df, val_df, test_df
+
+def getKFoldedCrossValDatasets(num_folds = 5, train_transform=None, val_test_transform=None, limit=0, balanced=False, randomSeed=666):
+    annotations = get_annotation_pandas_df()
+    annotations = annotations.dropna()
+    annotations = annotations.reset_index(drop=True)
+    
+    if balanced: 
+        num_nonzeros = annotations['Hyfer'][annotations['Hyfer'] > 0].count()
+        num_zeros = annotations['Hyfer'][annotations['Hyfer'] == 0].count()
+        while num_nonzeros != num_zeros:
+            num_to_remove = num_zeros - num_nonzeros
+            remove_indices = annotations[annotations['Hyfer'] == 0].sample(n=num_to_remove, random_state=randomSeed).index
+            annotations = annotations.drop(remove_indices)
+            num_nonzeros = annotations['Hyfer'][annotations['Hyfer'] > 0].count()
+            num_zeros = annotations['Hyfer'][annotations['Hyfer'] == 0].count()
+            
+    if limit: annotations = annotations.iloc[0:limit]
+   
+    kf = KFold(n_splits=num_folds)
+    
+    train_test_dataset_tuples = []
+
+    # Loop over the splits and perform cross-validation
+    for train_indices, test_indices in kf.split(annotations):
+        # Split the data into train and test sets
+        train_df = annotations.iloc[train_indices]
+        test_df = annotations.iloc[test_indices]
+        
+        train_test_dataset_tuples.append((FungAIDataset(train_df, train_transform), FungAIDataset(test_df, val_test_transform)))
+    return train_test_dataset_tuples
+    
 
 # if given valsize = 0 it will only return train and test Pytorch datasets. 
 def getFungAIDatasetSplits(valsize, testsize, trainsize=None, train_transform=None, val_test_transform=None, limit=0, balanced=False, randomSeed=666):
