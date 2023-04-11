@@ -1,6 +1,6 @@
 https://github.com/BMIRDS/deepslide 
 
-* [11th of April 2023 ] (#april-11th)
+* [11th of April 2023 ](#april-11th)
 
 * [19th of March 2023 (pre weekly-meetings)](#march-19th)
 
