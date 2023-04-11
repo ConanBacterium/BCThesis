@@ -1,6 +1,6 @@
 https://github.com/BMIRDS/deepslide 
 
-* [11th of April 2023 (#april-11th)
+* [11th of April 2023] (#april-11th)
 
 * [19th of March 2023 (pre weekly-meetings](#march-19th)
 
@@ -9,9 +9,9 @@ https://github.com/BMIRDS/deepslide
 * [7th March 2023 (progress as of 7th March, pre weekly-meetings)](#march-7th)
 
 ### April 11th
-Changed project I'm replicating to this one https://arxiv.org/pdf/1802.00752.pdf#page=8&zoom=100,180,801. Only using 1 encoder though, EfficientNet, for computation time. 
+Changed project I'm replicating to this one https://arxiv.org/pdf/1802.00752.pdf#page=8&zoom=100,180,801. The data is the ICIAR2018 dataset, but using the .tif files and not the WSI. There are 100 imgs pr class (4 classes, 2 healthy 2 not). Heavy color augmentation is used (because H/E stain) and random crops of 2 sizes are extracted and encoded with 3 pretrained CNNs. The encodings are then used for input in a gradient boosted tree classifier.
 
-I make their data greyscale to make it look like mine, and I only do brightness augmentations. I saved the encodings for 15 brightness augmentations and now just need to train model on it. 
+Only using 1 encoder though, EfficientNet, for computation time. I make their data greyscale to make it look like mine, and I only do brightness augmentations since it doesn't make sense to do their H/E stain color augmentation on greyscale images. I saved the encodings for 15 brightness augmentations and now just need to train model on it. 
 
 Changed annotation process for FungAI (again). This time it's going fast because I annotate it myself. 
 
