@@ -1,10 +1,19 @@
 https://github.com/BMIRDS/deepslide 
 
+* [11th of April 2023 (#april-11th)
+
 * [19th of March 2023 (pre weekly-meetings](#march-19th)
 
 * [12th of March 2023 (pre weekly-meetings](#march-12th)
 
 * [7th March 2023 (progress as of 7th March, pre weekly-meetings)](#march-7th)
+
+### April 11th
+Changed project I'm replicating to this one https://arxiv.org/pdf/1802.00752.pdf#page=8&zoom=100,180,801. Only using 1 encoder though, EfficientNet, for computation time. 
+
+I make their data greyscale to make it look like mine, and I only do brightness augmentations. I saved the encodings for 15 brightness augmentations and now just need to train model on it. 
+
+Changed annotation process for FungAI (again). This time it's going fast because I annotate it myself. 
 
 ### March 19th
 
