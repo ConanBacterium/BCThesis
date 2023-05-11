@@ -71,10 +71,29 @@ def get_descriptor_from_imgtensor__chunks_instead_of_random_crops(img_tensor, ef
         cropped_images = [item for sublist in cropped_images for item in sublist]
 
         return cropped_images
+    def pad_(cropped_images, max_height, max_width):
+        padded_images = []
+        for crop in cropped_images:
+            pad_height = max_height - crop.size(1)
+            pad_width = max_width - crop.size(2)
+            padded_crop = torch.nn.functional.pad(crop, (0, pad_width, 0, pad_height))
+            padded_images.append(padded_crop)
+        return padded_images
     
     crops_4 = get_chunks(img_tensor, 2, 2)
     crops_9 = get_chunks(img_tensor, 3, 3)
 
+    # start_time = time.time()
+    max_height_4 = max([crop.size(1) for crop in crops_4])
+    max_width_4 = max([crop.size(2) for crop in crops_4])
+    max_height_9 = max([crop.size(1) for crop in crops_9])
+    max_width_9 = max([crop.size(2) for crop in crops_9])
+    max_height = max([max_height_4, max_height_9])
+    max_width = max([max_width_4, max_width_9])
+    crops_4 = pad_(crops_4, max_height, max_width)
+    crops_9 = pad_(crops_9, max_height, max_width)
+    # elapsed_time = time.time() - start_time
+    # print("Padding took:", elapsed_time, "seconds") ### takes 0.012269735336303711, so no problemo
     
     encodings = []
 

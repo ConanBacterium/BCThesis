@@ -3,3 +3,5 @@ unet
 pointwise_crops_w_touchcount.py
 
 temp.py
+
+__pycache__
