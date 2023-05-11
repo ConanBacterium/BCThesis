@@ -28,7 +28,7 @@ def get_descriptor_from_imgtensor(img_tensor, cropsize1, cropsize2, cropcount1, 
         cropped_tensor = tensor[:, top:top + crop_size, left:left + crop_size]
         cropped_tensor = cropped_tensor.to(device)
         return cropped_tensor
-
+    
     crops1 = []
     for _ in range(cropcount1):
         crops1.append(random_crop(img_tensor, cropsize1))
@@ -58,20 +58,46 @@ def get_descriptor_from_imgtensor(img_tensor, cropsize1, cropsize2, cropcount1, 
             encodings.extend(efficientnet_encoding)
 
     encodings_tensor = torch.stack(encodings)
-
-    if torch.isnan(encodings_tensor).any():
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        print("There are NaN values in encodings_tensor")
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
     
     pooled_descriptor = geometric_mean(encodings_tensor, 0, 3)
+    return pooled_descriptor
+
+def get_descriptor_from_imgtensor__chunks_instead_of_random_crops(img_tensor, efficientnet):
+    img_tensor = img_tensor.to(device) 
+    def get_chunks(image_tensor, num_crops_vertical, num_crops_horizontal):
+
+        crops = torch.chunk(image_tensor, num_crops_vertical, dim=1) # dims: 0->channels, 1->horizontal, 2->vertical
+        cropped_images = [torch.chunk(crop, num_crops_horizontal, dim=2) for crop in crops]
+        cropped_images = [item for sublist in cropped_images for item in sublist]
+
+        return cropped_images
     
-    if torch.isnan(pooled_descriptor).any():
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        print("There are NaN values in pooled_descriptor")
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    crops_4 = get_chunks(img_tensor, 2, 2)
+    crops_9 = get_chunks(img_tensor, 3, 3)
 
+    
+    encodings = []
 
+    batch_size = 20
+
+    with torch.no_grad():
+        for i in range(0, len(crops_4), batch_size):
+            batch_crops = crops_4[i:i + batch_size]
+            input_tensor = torch.stack(batch_crops)
+            input_tensor = input_tensor.to(device)
+            efficientnet_encoding = efficientnet(input_tensor)
+            encodings.extend(efficientnet_encoding)
+         
+        for i in range(0, len(crops_9), batch_size):
+            batch_crops = crops_9[i:i + batch_size]
+            input_tensor = torch.stack(batch_crops)
+            input_tensor = input_tensor.to(device)
+            efficientnet_encoding = efficientnet(input_tensor)
+            encodings.extend(efficientnet_encoding)
+
+    encodings_tensor = torch.stack(encodings)
+    
+    pooled_descriptor = geometric_mean(encodings_tensor, 0, 3)
     return pooled_descriptor
 
 
