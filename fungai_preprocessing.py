@@ -7,16 +7,14 @@ device = torch.device("cpu")
 from pathlib import Path
 import os
 import time
+import shutil
 
 preprocessing_dir = Path("data/fungai_preprocessing")
 crops_dir = preprocessing_dir / "crops"
 augmented_tensor_crops_dir = preprocessing_dir / "augmented_tensor_crops"
 descriptors_dir = preprocessing_dir / "descriptors"
 
-if not os.path.exists(preprocessing_dir): os.makedirs(preprocessing_dir)
-if not os.path.exists(crops_dir): os.makedirs(crops_dir)
-if not os.path.exists(augmented_tensor_crops_dir): os.makedirs(augmented_tensor_crops_dir)
-if not os.path.exists(descriptors_dir): os.makedirs(descriptors_dir)
+
 
 def get_sagsinfo(path_of_full_png):
     string = Path(path_of_full_png).name
@@ -31,6 +29,11 @@ def get_sagsinfo(path_of_full_png):
 ######## TODO #########
 ######## TODO #########
 def fungai_preprocess_wholeimg(pngpath, maskpath, postnorm, prenorm, brightness_factors):
+    if not os.path.exists(preprocessing_dir): os.makedirs(preprocessing_dir)
+    if not os.path.exists(crops_dir): os.makedirs(crops_dir)
+    if not os.path.exists(augmented_tensor_crops_dir): os.makedirs(augmented_tensor_crops_dir)
+    if not os.path.exists(descriptors_dir): os.makedirs(descriptors_dir)
+
     # cut up into appropriate iciar size and save the touchcount in name
     sagsinfo = get_sagsinfo(pngpath)
     crops_savedir = crops_dir / sagsinfo 
@@ -82,6 +85,10 @@ for i, (mask_path, png_path) in enumerate(zip(mask_paths, png_paths)):
     start_time = time.time()
     
     fungai_preprocess_wholeimg(png_path, mask_path, True, True, factors)
+
+    # making sure we don't run out of space
+    shutil.rmtree(crops_dir)
+    shutil.rmtree(augmented_tensor_crops_dir)
 
     end_time = time.time()
 
