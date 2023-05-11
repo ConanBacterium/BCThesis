@@ -1,6 +1,6 @@
 from pointwise_crops_w_touchcount import pointwise_crops_w_touchcount
 from generateAugmentedImgTensors import generateAugmentedImgTensors
-from get_descriptor_from_imgtensor import get_descriptor_from_imgtensor
+from get_descriptor_from_imgtensor import get_descriptor_from_imgtensor, get_descriptor_from_imgtensor__chunks_instead_of_random_crops
 import torch 
 import torchvision.models as models
 device = torch.device("cpu")
@@ -12,7 +12,8 @@ import shutil
 preprocessing_dir = Path("data/fungai_preprocessing")
 crops_dir = preprocessing_dir / "crops"
 augmented_tensor_crops_dir = preprocessing_dir / "augmented_tensor_crops"
-descriptors_dir = preprocessing_dir / "descriptors"
+descriptors_randomized_dir = preprocessing_dir / "descriptors_randomized"
+descriptors_chunks_dir = preprocessing_dir / "descriptors_chunks"
 
 
 
@@ -32,7 +33,8 @@ def fungai_preprocess_wholeimg(pngpath, maskpath, postnorm, prenorm, brightness_
     if not os.path.exists(preprocessing_dir): os.makedirs(preprocessing_dir)
     if not os.path.exists(crops_dir): os.makedirs(crops_dir)
     if not os.path.exists(augmented_tensor_crops_dir): os.makedirs(augmented_tensor_crops_dir)
-    if not os.path.exists(descriptors_dir): os.makedirs(descriptors_dir)
+    if not os.path.exists(descriptors_randomized_dir): os.makedirs(descriptors_randomized_dir)
+    if not os.path.exists(descriptors_chunks_dir): os.makedirs(descriptors_chunks_dir)
 
     # cut up into appropriate iciar size and save the touchcount in name
     sagsinfo = get_sagsinfo(pngpath)
@@ -60,8 +62,12 @@ def fungai_preprocess_wholeimg(pngpath, maskpath, postnorm, prenorm, brightness_
     for img_tensor_path in augmented_img_tensors_paths:
         img_tensor_name = Path(img_tensor_path).name
         img_tensor = torch.load(img_tensor_path)
+        # randomly_extracted_descriptor
         pooled_descriptor = get_descriptor_from_imgtensor(img_tensor, 800, 1300, 7, 3, efficientnet)
-        torch.save(pooled_descriptor, descriptors_dir / img_tensor_name)
+        torch.save(pooled_descriptor, descriptors_randomized_dir / img_tensor_name)
+        # nonrandomly_extracted_descriptor
+        pooled_descriptor = get_descriptor_from_imgtensor__chunks_instead_of_random_crops(img_tensor, efficientnet)
+        torch.save(pooled_descriptor, descriptors_chunks_dir / img_tensor_name)
     
     
 directory = Path("data/FungAI")
