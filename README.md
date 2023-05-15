@@ -9,13 +9,13 @@ The dataset from Teknologisk Institut is private, and some of the code is privat
 
 The general approach is available by running the preprocessing scripts iciar_preprocessing_aug.py and iciar_preprocessing_descriptors.py in sequence. They expect the following data directories: 
 
-data
-└── ICIAR2018_BACH_CHALLENGE
-    └── Photos
-        ├── Normal
-        ├── Benign
-        ├── InSitu
-        └── Invasive
+- `data`
+  - `ICIAR2018_BACH_CHALLENGE`
+    - `Photos`
+      - `Normal`
+      - `Benign`
+      - `InSitu`
+      - `Invasive`
 
 Then the cells of "Training GBT ICIAR.ipynb" can be executed. 
 
