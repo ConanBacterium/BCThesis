@@ -8,8 +8,8 @@ import sys
 import shutil
 import os
 
-#device = torch.device("cuda")
-device = torch.device("cpu")
+if torch.cuda.is_available():   device = torch.device("cuda")  # Use CUDA device
+else:    device = torch.device("cpu")   # Use CPU
 
 def geometric_mean(tensor, dim, power):
     pow_tensor = torch.pow(tensor.abs(), power)
