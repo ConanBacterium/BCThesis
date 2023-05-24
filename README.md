@@ -21,3 +21,6 @@ Then the cells of "Training GBT ICIAR.ipynb" can be executed.
 
 Note that it's possible to use get_descriptor_from_imgtensor__chunks_instead_of_random_crops() instead of get_descriptor_from_imgtensor() in the iciar_preprocessing_descriptors.py. The crops won't be extracted randomly, but instead the image will be cut into 4 equal parts, and then 9 equal parts, and those crops are then what are encoded by EfficientNet and pooled into a single descriptor. That way no information in the image will be lost. 
 
+# DISCLAIMER: 
+The approach tested in this project differs from the one being developed at TI. 
+
